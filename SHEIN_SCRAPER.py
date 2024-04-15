@@ -52,7 +52,7 @@ def add_data_to_excel_file(item_name, item_link, item_image, item_price, item_si
     item_hyperlink = '=HYPERLINK("{link}", "{name}")'.format(link=item_link, name=item_name)
     image_path = '=IMAGE("{image_url}")'.format(image_url=item_image)
 
-    sheet.append([item_hyperlink, image_path, item_price, gyd_price, '', '', item_sizes])
+    sheet.append([item_hyperlink, image_path, item_price, gyd_price, item_sizes, '', ''])
 
     for col in ["A", "B", "C", "D", "E", "F", "G"]:
         sheet.column_dimensions[col].width = 28
@@ -78,7 +78,7 @@ def add_data_to_excel_file(item_name, item_link, item_image, item_price, item_si
         for cell in row:
             sheet.row_dimensions[cell.row].height = 200
 
-    for row in sheet.iter_rows(min_row=1, max_row=sheet.max_row, min_col=1, max_col=6):
+    for row in sheet.iter_rows(min_row=1, max_row=sheet.max_row, min_col=1, max_col=7):
         for cell in row:
             cell.alignment = alignment
             cell.border = border
