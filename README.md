@@ -6,7 +6,6 @@ This PyQt5 application allows you to scrape product details from Shein URLs, inc
 ## Features
 
 - Drag and drop functionality for easy use.
-- Multithreaded processing for faster scraping.
 - Automatically calculates Guyanese Dollar (GYD) prices based on USD prices and shipping costs. (These are hard coded)
 - Saves product details to an Excel file for easy access.
 
@@ -26,15 +25,20 @@ This PyQt5 application allows you to scrape product details from Shein URLs, inc
 
    ```bash
    git clone https://github.com/aG00Dtime/Custom_shein_product_details_scraper.git
+    ```
 2. Install dependencies:
 
     ```bash
     pip install -r requirements.txt
+    ```
 ## Usage
 
-### Run the application:
-    
-      python SheinScraper.py
+Run the application:
+   ```bash
+   python SheinScraper.py
+   ```
+
+
 
 Drag and drop a text file containing Shein URLs into the application window.
 
