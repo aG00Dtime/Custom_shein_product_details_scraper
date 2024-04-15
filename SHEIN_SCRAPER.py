@@ -100,11 +100,12 @@ class SheinScraper(QMainWindow):
         super().__init__()
 
         # open driver
+        self.driver = None
         self.redirected_url = None
         self.chrome_options = Options()
         self.chrome_options.add_argument("--headless")
         self.chrome_options.add_argument("--disable-gpu")
-        self.driver = webdriver.Chrome(options=self.chrome_options)
+        # self.driver = webdriver.Chrome(options=self.chrome_options)
 
         self.update_progress_signal = UpdateProgressSignal()
         self.update_progress_signal.update_progress.connect(self.update_progress_bar)
@@ -195,7 +196,7 @@ class SheinScraper(QMainWindow):
         price = None
 
         self.driver.get(url)
-        self.driver.implicitly_wait(1)
+        self.driver.implicitly_wait(5)
         soup = BeautifulSoup(self.driver.page_source, 'html.parser')
 
         item_name = soup.title.text.strip()[:50]
@@ -261,6 +262,10 @@ class SheinScraper(QMainWindow):
         self.scroll_output()
 
     def get_item_urls(self, file_name: str):
+        # start the driver
+        self.driver = webdriver.Chrome(options=self.chrome_options)
+        self.progress_bar.setValue(0)
+
         with open(file_name, "r") as f:
             urls = f.readlines()
 
@@ -284,7 +289,7 @@ class SheinScraper(QMainWindow):
                     self.update_progress_signal.update_progress.emit(idx + 1)
 
         self.driver.quit()
-        self.update_output_signal.update_output.emit(f"------->  Done: {file_name}")
+        self.update_output_signal.update_output.emit(f"------->  Done: {file_name} \n")
         self.scroll_output()
 
 
