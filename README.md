@@ -31,9 +31,10 @@ This PyQt5 application allows you to scrape product details from Shein URLs, inc
     ```bash
     pip install -r requirements.txt
 ## Usage
+
 ### Run the application:
     
-    python SheinScraper.py
+      python SheinScraper.py
 
 Drag and drop a text file containing Shein URLs into the application window.
 
