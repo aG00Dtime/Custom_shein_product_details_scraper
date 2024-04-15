@@ -22,7 +22,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 mutex = QMutex()
 
 
-def add_data_to_excel_file(item_name, item_link, item_image, item_price):
+def add_data_to_excel_file(item_name, item_link, item_image, item_price,item_sizes):
     # $$$
     shipping = 900
     exchange_rate = 220
@@ -45,15 +45,16 @@ def add_data_to_excel_file(item_name, item_link, item_image, item_price):
         sheet["B1"] = "Product Image"
         sheet["C1"] = "US Price"
         sheet["D1"] = "GYD Price + Shipping"
-        sheet["E1"] = "Page Price"
-        sheet["F1"] = "Profit"
+        sheet["E1"] = "Sizes"
+        sheet["F1"] = "Page Price"
+        sheet["G1"] = "Profit"
 
     item_hyperlink = '=HYPERLINK("{link}", "{name}")'.format(link=item_link, name=item_name)
     image_path = '=IMAGE("{image_url}")'.format(image_url=item_image)
 
-    sheet.append([item_hyperlink, image_path, item_price, gyd_price, '', ''])
+    sheet.append([item_hyperlink, image_path, item_price, gyd_price, '', '',item_sizes])
 
-    for col in ["A", "B", "C", "D", "E", "F"]:
+    for col in ["A", "B", "C", "D", "E", "F","G"]:
         sheet.column_dimensions[col].width = 28
 
     header_font = Font(color="FFFFFF", bold=True)
@@ -165,8 +166,11 @@ class SheinScraper(QMainWindow):
 
         files = [u.toLocalFile() for u in event.mimeData().urls()]
         for file_path in files:
-            self.output_window.append(f"------->  Grabbing Product Details from: {file_path}")
-
+            
+            self.update_output_signal.update_output.emit(f"------->  Grabbing Product Details from: {file_path}")
+            self.scroll_output()
+            
+            # start a thread for these items 
             threading.Thread(target=self.get_item_urls, args=(file_path,)).start()
 
     def save_image_as_jpg(self, url, filepath):
@@ -176,6 +180,7 @@ class SheinScraper(QMainWindow):
             img.save(filepath, 'JPEG')
 
     def get_redirected_url(self, url):
+        
         # for mobile share links
         if 'api' in url:
             self.driver.get(url)
@@ -205,7 +210,9 @@ class SheinScraper(QMainWindow):
 
         self.update_output_signal.update_output.emit(f"------->  Processing: {item_name}")
         self.scroll_output()
-
+        
+        
+        # image scraping
         picture_url_tag = soup.find_all('div', class_='product-intro-zoom__item')
         picture_thumbnails = soup.find_all('div', class_='product-intro__thumbs-item')
 
@@ -224,7 +231,8 @@ class SheinScraper(QMainWindow):
                 if url.startswith("//"):
                     url = "https:" + url
                 picture_urls.append(url)
-
+                
+        # find the sizes
         size_elements = soup.find_all('div', class_='product-intro__size-choose')
         for size_element in size_elements:
             size_items = size_element.find_all('div', class_='product-intro__size-radio')
@@ -232,7 +240,8 @@ class SheinScraper(QMainWindow):
                 size = size_item.get('data-attr_value_name')
                 if size:
                     sizes.append(size)
-
+                    
+        # first price it finds, could be sale price could be the non sale price
         elements = soup.find_all('div', class_='from original')
         for element in elements:
             if "$" in element.text:
@@ -245,6 +254,7 @@ class SheinScraper(QMainWindow):
 
         self.sizes_str = "_".join(sizes)
 
+        # save picutes exclude some overlays
         for i, picture_url in enumerate(picture_urls):
             image_size = int(requests.head(picture_url).headers['Content-Length'])
             # dont download overlays
@@ -257,11 +267,15 @@ class SheinScraper(QMainWindow):
             self.save_image_as_jpg(picture_url, filepath)
             self.scroll_output()
 
-        add_data_to_excel_file(item_name, self.item_url, picture_urls[1], price)
+        
+        #add item data to file
+        add_data_to_excel_file(item_name, self.item_url, picture_urls[1], price,self.sizes_str)
+        
         self.update_output_signal.update_output.emit(f"------->  Done")
         self.scroll_output()
 
     def get_item_urls(self, file_name: str):
+        
         # start the driver
         self.driver = webdriver.Chrome(options=self.chrome_options)
         self.progress_bar.setValue(0)
