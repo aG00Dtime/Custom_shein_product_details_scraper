@@ -2,6 +2,7 @@ import os
 import re
 import sys
 import threading
+import time
 from datetime import date
 from io import BytesIO
 
@@ -24,8 +25,8 @@ mutex = QMutex()
 
 def add_data_to_excel_file(item_name, item_link, item_image, item_price, item_sizes):
     # $$$
-    shipping = 900
-    exchange_rate = 220
+    shipping = 1000
+    exchange_rate = 225
 
     us_price = float(item_price.replace("$", ''))
 
@@ -101,12 +102,9 @@ class SheinScraper(QMainWindow):
         super().__init__()
 
         # open driver
+        self.chrome_options = None
         self.driver = None
         self.redirected_url = None
-        self.chrome_options = Options()
-        self.chrome_options.add_argument("--headless")
-        self.chrome_options.add_argument("--disable-gpu")
-        # self.driver = webdriver.Chrome(options=self.chrome_options)
 
         self.update_progress_signal = UpdateProgressSignal()
         self.update_progress_signal.update_progress.connect(self.update_progress_bar)
@@ -200,6 +198,7 @@ class SheinScraper(QMainWindow):
         price = None
 
         self.driver.get(url)
+        time.sleep(5)
         self.driver.implicitly_wait(5)
         soup = BeautifulSoup(self.driver.page_source, 'html.parser')
 
@@ -223,6 +222,7 @@ class SheinScraper(QMainWindow):
                 picture_urls.append(url)
 
         for element in picture_thumbnails:
+
             img_tag = element.find('img', class_='fsp-element crop-image-container__img')
             if img_tag:
                 url = img_tag['src']
@@ -252,7 +252,11 @@ class SheinScraper(QMainWindow):
 
         self.sizes_str = "_".join(sizes)
 
-        # save picutes exclude some overlays
+        # downloading images
+        self.update_output_signal.update_output.emit(f"------->  Downloading images")
+        self.scroll_output()
+
+        # # save pictures exclude some overlays
         for i, picture_url in enumerate(picture_urls):
             image_size = int(requests.head(picture_url).headers['Content-Length'])
             # dont download overlays
@@ -266,15 +270,23 @@ class SheinScraper(QMainWindow):
             self.scroll_output()
 
         # add item data to file
-        add_data_to_excel_file(item_name, self.item_url, picture_urls[1], price, self.sizes_str)
+        add_data_to_excel_file(item_name, self.item_url, picture_urls[0], price, self.sizes_str)
 
         self.update_output_signal.update_output.emit(f"------->  Done")
         self.scroll_output()
 
     def get_item_urls(self, file_name: str):
 
+        self.chrome_options = Options()
+        self.chrome_options.add_argument("--headless")
+        self.chrome_options.add_argument("--disable-gpu")
+        self.chrome_options.add_argument("user-agent= Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ("
+                                         "KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36")
+
         # start the driver
         self.driver = webdriver.Chrome(options=self.chrome_options)
+
+        # set progress bar start value
         self.progress_bar.setValue(0)
 
         with open(file_name, "r") as f:
@@ -302,6 +314,7 @@ class SheinScraper(QMainWindow):
         self.driver.quit()
         self.update_output_signal.update_output.emit(f"------->  Done: {file_name} \n")
         self.scroll_output()
+        self.progress_bar.setValue(100)
 
 
 if __name__ == '__main__':
